@@ -1,4 +1,4 @@
-package nl.tue.javajj;
+package nl.tue.win.javajj;
 
 import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.PackageDeclaration;

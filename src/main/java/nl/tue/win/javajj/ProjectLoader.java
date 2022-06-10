@@ -1,4 +1,4 @@
-package nl.tue.javajj;
+package nl.tue.win.javajj;
 
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
@@ -20,7 +20,7 @@ public class ProjectLoader {
         this.args = args;
     }
 
-    public List<CompilationUnit> getCompilationUnits() {
+    public List<CompilationUnit> getCompilationUnits() throws IOException {
         List<CompilationUnit> tmp = new ArrayList<>();
         String fileName = args[args.length-1];
         try(ZipFile zipFile = new ZipFile(fileName)) {
@@ -32,8 +32,6 @@ public class ProjectLoader {
                     tmp.add(StaticJavaParser.parse(stream));
                 }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
         return Collections.unmodifiableList(tmp);
     }
