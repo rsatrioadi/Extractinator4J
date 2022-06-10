@@ -1,38 +1,71 @@
 package nl.tue.win.javajj;
 
-import com.github.javaparser.StaticJavaParser;
+import com.github.javaparser.ParseResult;
+import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.symbolsolver.JavaSymbolSolver;
+import com.github.javaparser.symbolsolver.model.resolution.TypeSolver;
+import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
+import com.github.javaparser.symbolsolver.resolution.typesolvers.MemoryTypeSolver;
+import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
+import com.github.javaparser.utils.Pair;
+import com.github.javaparser.utils.SourceZip;
+import nl.tue.win.model.Project;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class ProjectLoader {
 
     private final String[] args;
+    private final Project project;
+    private final JavaSymbolSolver symbolSolver;
+    private final TypeSolver typeSolver;
+    private final MemoryTypeSolver memSolver;
+    private final String fileName;
 
     public ProjectLoader(String[] args) {
         this.args = args;
+        this.project = new Project(getName());
+        this.fileName = args[args.length-1];
+        this.memSolver = new MemoryTypeSolver();
+        this.typeSolver = new CombinedTypeSolver(
+                new ReflectionTypeSolver(),
+                memSolver);
+        this.symbolSolver = new JavaSymbolSolver(typeSolver);
+    }
+
+    public String getName() {
+        return args[args.length-1].replace(".zip", "");
+    }
+
+    public TypeSolver getTypeSolver() {
+        return typeSolver;
+    }
+
+    public MemoryTypeSolver getMemSolver() {
+        return memSolver;
+    }
+
+    public JavaSymbolSolver getSymbolSolver() {
+        return symbolSolver;
     }
 
     public List<CompilationUnit> getCompilationUnits() throws IOException {
-        List<CompilationUnit> tmp = new ArrayList<>();
-        String fileName = args[args.length-1];
-        try(ZipFile zipFile = new ZipFile(fileName)) {
-            Enumeration<? extends ZipEntry> entries = zipFile.entries();
-            while (entries.hasMoreElements()) {
-                ZipEntry entry = entries.nextElement();
-                if (entry.getName().endsWith(".java")) {
-                    InputStream stream = zipFile.getInputStream(entry);
-                    tmp.add(StaticJavaParser.parse(stream));
-                }
-            }
-        }
-        return Collections.unmodifiableList(tmp);
+        SourceZip sourceZip = new SourceZip(Paths.get(fileName), new ParserConfiguration().setSymbolResolver(symbolSolver));
+        List<Pair<Path, ParseResult<CompilationUnit>>> cuList = sourceZip.parse();
+        return cuList.stream().parallel()
+                .map(pair -> pair.b.getResult())
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toUnmodifiableList());
+    }
+
+    public Project getProject() {
+        return project;
     }
 }

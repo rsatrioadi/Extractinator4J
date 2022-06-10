@@ -1,0 +1,141 @@
+
+@prefix : <http://set.win.tue.nl/ontology#> .
+@prefix rdfs:	<http://www.w3.org/2000/01/rdf-schema#> . 
+@prefix rdf:	<http://www.w3.org/1999/02/22-rdf-syntax-ns#> . 
+@prefix owl:	<http://www.w3.org/2002/07/owl#> .
+@base <http://set.win.tue.nl/ontology#> .
+
+<http://set.win.tue.nl/ontology>
+	rdf:type owl:Ontology .
+
+:structural_unit
+	rdf:type		rdfs:Class;
+	rdf:type		:Class;
+	rdfs:comment	"building blocks of software"@en.
+
+:specializable	
+	rdf:type		rdfs:Class;
+	rdfs:subClassOf	:structural_unit;
+	rdfs:comment	"things that can be inherited from"@en.
+
+:callable
+	rdf:type		rdfs:Class;
+	rdfs:subClassOf	:structural_unit;
+	rdfs:comment	"things that can be called"@en.
+
+
+:class
+	rdf:type		rdfs:Class;
+	rdfs:subClassOf	:specializable;
+	rdfs:subClassOf	:callable;
+	rdfs:comment	"class"@en.
+
+:project
+	rdf:type		rdfs:Class;
+	rdfs:subClassOf	:structural_unit;
+	rdfs:comment	"package"@en.
+
+:package	
+	rdf:type		rdfs:Class;
+	rdfs:subClassOf	:specializable;
+	rdfs:comment	"package"@en.
+
+:namespace
+	rdf:type		rdfs:Class;
+	rdfs:subClassOf	:structural_unit;
+	rdfs:comment	"namespace"@en.
+
+:function
+	rdf:type		rdfs:Class;
+	rdfs:subClassOf	:callable;
+	rdfs:comment	"function"@en.
+
+
+:has_return_type
+	rdf:type		rdf:Property;
+	rdfs:subClassOf :edge;
+	rdfs:domain		:callable;
+	rdfs:range		:class;
+	rdfs:comment	"function has a return type of a certain class"@en.
+
+:has_parameter_type
+	rdf:type		rdf:Property;
+	rdfs:subClassOf :edge;
+	rdfs:domain		:callable;
+	rdfs:range		:class;
+	rdfs:comment	"function has a parameter type of a certain class"@en.
+
+:constructor
+	rdf:type		rdfs:Class;
+	rdfs:subClassOf :function;
+	rdfs:comment	"constructs a class"@en.
+
+:edge   
+	rdf:type		rdf:Property;
+	rdfs:domain		:structural_unit;
+	rdfs:range	   	:structural_unit;
+	rdfs:comment	"abstract link between structural units"@en.
+
+:calls
+	rdf:type			rdf:Property;
+	rdfs:subPropertyOf	:edge;
+	rdfs:comment	 	"structural unit calls a function of another unit"@en.
+
+:creates
+	rdf:type			rdf:Property;
+	rdfs:subPropertyOf	:calls;
+	rdfs:comment		"structural unit calls a constructor of another unit"@en.
+
+:returns
+	rdf:type			rdf:Property;
+	rdfs:subPropertyOf	:edge;
+	rdfs:comment	 	"structural unit returns an object of another unit"@en.
+
+:specializes	
+	rdf:type			rdf:Property;
+	rdfs:subPropertyOf	:edge;
+	rdfs:comment		"structural unit specializes another structural unit"@en.
+
+:references
+	rdf:type			rdf:Property;
+	rdfs:subPropertyOf	:edge;
+	rdfs:comment		"structural unit accepts another unit as parameter to its function"@en.
+
+:has
+	rdf:type			rdf:Property;
+	rdfs:subPropertyOf	:edge;
+	rdfs:comment		"structural unit contains another unit"@en.
+
+:named
+	rdf:type		rdf:Property;
+	rdfs:domain		:structural_unit;
+	rdfs:range		rdfs:Literal;
+	rdfs:comment	"name of a structural unit"@en.
+
+:kind
+	rdf:type		rdf:Property;
+	rdfs:domain		:class;
+	rdfs:range		rdfs:Literal;
+	rdfs:comment	"kind of a class"@en.
+
+:design_pattern
+	rdf:type		rdfs:Class;
+	rdfs:type		rdfs:Class;
+	rdfs:comment	"general design pattern"@en.
+
+:role
+	rdf:type		rdfs:Class;
+	rdfs:type		rdfs:Class;
+	rdfs:comment	"role in a design pattern"@en.
+
+:part_of
+	rdf:type		rdf:Property;
+	rdfs:domain		:role;
+	rdfs:range		:design_pattern;
+	rdfs:comment 	"role is part of design pattern"@en.
+
+:manifests
+	rdf:type		rdf:Property;
+	rdfs:domain		:structural_unit;
+	rdfs:range		:role;
+	rdfs:comment	"a structural unit manifests a role in a design pattern"@en.
