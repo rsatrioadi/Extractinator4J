@@ -89,19 +89,6 @@ public class ClassType {
             ResolvedTypeDeclaration type = field.declaringType();
             Resource resFtype = model.createResource(String.format("%s%s", Project.URI_PREFIX, type.getQualifiedName()));
             res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#has"), resFtype);
-//            ResolvedType ftype = field.getType().isArray()
-//                    ? field.getType().asArrayType().getComponentType()
-//                    : field.getType();
-//            if (ftype.isReferenceType()) {
-//                Resource resFtype = model.createResource(String.format("%s%s", Project.URI_PREFIX, ftype.asReferenceType().getQualifiedName()));
-//                res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#has"), resFtype);
-//                ftype.asReferenceType().typeParametersValues().forEach(param -> {
-//                    if (param.isReferenceType()) {
-//                        Resource resParam = model.createResource(String.format("%s%s", Project.URI_PREFIX, param.asReferenceType().getQualifiedName()));
-//                        res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#has"), resParam);
-//                    }
-//                });
-//            }
         });
 
         // Extract methods
@@ -112,20 +99,6 @@ public class ClassType {
             ResolvedReferenceTypeDeclaration type = method.declaringType();
             Resource resFtype = model.createResource(String.format("%s%s", Project.URI_PREFIX, type.getQualifiedName()));
             res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#returns"), resFtype);
-//            ResolvedType returnType = method.getReturnType();
-//            ResolvedType ftype = returnType.isArray()
-//                    ? returnType.asArrayType().getComponentType()
-//                    : returnType;
-//            if (ftype.isReferenceType()) {
-//                Resource resFtype = model.createResource(String.format("%s%s", Project.URI_PREFIX, ftype.asReferenceType().getQualifiedName()));
-//                res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#returns"), resFtype);
-//                ftype.asReferenceType().typeParametersValues().forEach(param -> {
-//                    if (param.isReferenceType()) {
-//                        Resource resParam = model.createResource(String.format("%s%s", Project.URI_PREFIX, param.asReferenceType().getQualifiedName()));
-//                        res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#returns"), resParam);
-//                    }
-//                });
-//            }
         });
 
         return res;
