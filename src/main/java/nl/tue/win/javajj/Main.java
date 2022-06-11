@@ -56,7 +56,7 @@ public class Main {
 
     public static OntModel loadOntologyModel() throws IOException {
         OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM, null);
-        try (InputStream stream = Main.class.getClassLoader().getResourceAsStream("schema.owl")) {
+        try (InputStream stream = new ResourceLoader().loadResource("schema.owl")) {
             RDFDataMgr.read(model, Objects.requireNonNull(stream), Lang.TURTLE);
         }
         return model;
