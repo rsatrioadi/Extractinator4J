@@ -6,7 +6,7 @@
 
     <groupId>nl.tue.win</groupId>
     <artifactId>JavaJJ</artifactId>
-    <version>0.2</version>
+    <version>0.2.1</version>
     <dependencies>
         <dependency>
             <groupId>org.slf4j</groupId>

@@ -1,5 +1,7 @@
 package nl.tue.win.model;
 
+import com.github.javaparser.ast.body.FieldDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.ReferenceType;
@@ -84,21 +86,34 @@ public class ClassType {
         }
 
         // Extract fields to populate "has"
-        List<ResolvedFieldDeclaration> fields = refType.getDeclaredFields();
+        List<FieldDeclaration> fields = decl.getFields();
         fields.forEach(field -> {
-            ResolvedTypeDeclaration type = field.declaringType();
-            Resource resFtype = model.createResource(String.format("%s%s", Project.URI_PREFIX, type.getQualifiedName()));
-            res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#has"), resFtype);
+            field.getVariables().forEach(variable -> {
+                try {
+                    if (variable.getType().resolve().isReferenceType()) {
+                        ResolvedReferenceType type = variable.getType().resolve().asReferenceType();
+                        Resource resFtype = model.createResource(String.format("%s%s", Project.URI_PREFIX, type.getQualifiedName()));
+                        res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#has"), resFtype);
+                    }
+                } catch(UnsolvedSymbolException ex) {
+                    ex.printStackTrace(System.err);
+                }
+            });
         });
 
         // Extract methods
-        Set<ResolvedMethodDeclaration> methods = refType.getDeclaredMethods();
+        List<MethodDeclaration> methods = decl.getMethods();
         methods.forEach(method -> {
-
-            // Populate "returns"
-            ResolvedReferenceTypeDeclaration type = method.declaringType();
-            Resource resFtype = model.createResource(String.format("%s%s", Project.URI_PREFIX, type.getQualifiedName()));
-            res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#returns"), resFtype);
+            try {
+                // Populate "returns"
+                if (method.getType().resolve().isReferenceType()) {
+                    ResolvedReferenceType type = method.getType().resolve().asReferenceType();
+                    Resource resFtype = model.createResource(String.format("%s%s", Project.URI_PREFIX, type.getQualifiedName()));
+                    res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#returns"), resFtype);
+                }
+            } catch(UnsolvedSymbolException ex) {
+                ex.printStackTrace(System.err);
+            }
         });
 
         return res;
