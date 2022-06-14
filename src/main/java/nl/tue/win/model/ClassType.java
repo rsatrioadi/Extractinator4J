@@ -4,27 +4,21 @@ import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
-import com.github.javaparser.ast.type.ReferenceType;
 import com.github.javaparser.resolution.UnsolvedSymbolException;
-import com.github.javaparser.resolution.declarations.ResolvedFieldDeclaration;
-import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration;
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
-import com.github.javaparser.resolution.declarations.ResolvedTypeDeclaration;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
-import com.github.javaparser.resolution.types.ResolvedType;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Resource;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 @SuppressWarnings("HttpUrlsUsage")
 public class ClassType {
 
     private static final boolean EXTRACT_CLASS_TYPE = false;
 
-    private final TypeDeclaration decl;
+    private final TypeDeclaration<?> decl;
     private final ResolvedReferenceTypeDeclaration refType;
 
     public ClassType(TypeDeclaration<?> decl) {
@@ -66,7 +60,7 @@ public class ClassType {
                         ResolvedReferenceType supRefType = supType.get().resolve().asReferenceType();
                         Resource resSup = model.createResource(String.format("%s%s", Project.URI_PREFIX, supRefType.getQualifiedName()));
                         res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#specializes"), resSup);
-                    } catch(UnsolvedSymbolException ex) {
+                    } catch (UnsolvedSymbolException ex) {
                         ex.printStackTrace(System.err);
                     }
                 }
@@ -78,7 +72,7 @@ public class ClassType {
                         ResolvedReferenceType supRefType = supType.get().resolve().asReferenceType();
                         Resource resSup = model.createResource(String.format("%s%s", Project.URI_PREFIX, supRefType.getQualifiedName()));
                         res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#specializes"), resSup);
-                    } catch(UnsolvedSymbolException ex) {
+                    } catch (UnsolvedSymbolException ex) {
                         ex.printStackTrace(System.err);
                     }
                 }
@@ -87,19 +81,17 @@ public class ClassType {
 
         // Extract fields to populate "has"
         List<FieldDeclaration> fields = decl.getFields();
-        fields.forEach(field -> {
-            field.getVariables().forEach(variable -> {
-                try {
-                    if (variable.getType().resolve().isReferenceType()) {
-                        ResolvedReferenceType type = variable.getType().resolve().asReferenceType();
-                        Resource resFtype = model.createResource(String.format("%s%s", Project.URI_PREFIX, type.getQualifiedName()));
-                        res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#has"), resFtype);
-                    }
-                } catch(UnsolvedSymbolException ex) {
-                    ex.printStackTrace(System.err);
+        fields.forEach(field -> field.getVariables().forEach(variable -> {
+            try {
+                if (variable.getType().resolve().isReferenceType()) {
+                    ResolvedReferenceType type = variable.getType().resolve().asReferenceType();
+                    Resource resFtype = model.createResource(String.format("%s%s", Project.URI_PREFIX, type.getQualifiedName()));
+                    res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#has"), resFtype);
                 }
-            });
-        });
+            } catch (UnsolvedSymbolException ex) {
+                ex.printStackTrace(System.err);
+            }
+        }));
 
         // Extract methods
         List<MethodDeclaration> methods = decl.getMethods();
@@ -111,7 +103,7 @@ public class ClassType {
                     Resource resFtype = model.createResource(String.format("%s%s", Project.URI_PREFIX, type.getQualifiedName()));
                     res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#returns"), resFtype);
                 }
-            } catch(UnsolvedSymbolException ex) {
+            } catch (UnsolvedSymbolException ex) {
                 ex.printStackTrace(System.err);
             }
         });

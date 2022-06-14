@@ -31,7 +31,7 @@ public class ProjectLoader {
     public ProjectLoader(String[] args) {
         this.args = args;
         this.project = new Project(getName());
-        this.fileName = args[args.length-1];
+        this.fileName = args[args.length - 1];
         this.memSolver = new MemoryTypeSolver();
         this.typeSolver = new CombinedTypeSolver(
                 new ReflectionTypeSolver(),
@@ -40,7 +40,7 @@ public class ProjectLoader {
     }
 
     public String getName() {
-        return args[args.length-1].replace(".zip", "");
+        return args[args.length - 1].replace(".zip", "");
     }
 
     public TypeSolver getTypeSolver() {
