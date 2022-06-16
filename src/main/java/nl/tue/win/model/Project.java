@@ -40,7 +40,7 @@ public class Project {
     public Resource addToModel(Model model) {
         String uri = String.format("%s%s", Project.URI_PREFIX, name);
         Resource res = model.createResource(uri)
-                .addProperty(model.getProperty("http://www.w3.org/2000/01/rdf-schema#type"), model.getResource("http://set.win.tue.nl/ontology#project"))
+                .addProperty(model.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), model.getResource("http://set.win.tue.nl/ontology#project"))
                 .addProperty(model.getProperty("http://set.win.tue.nl/ontology#named"), name, "en");
         packages.values().forEach(pkg -> {
             Resource resPkg = pkg.addToModel(model);

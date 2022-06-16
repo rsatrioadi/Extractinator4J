@@ -17,6 +17,8 @@ import java.util.Optional;
 public class ClassType {
 
     private static final boolean EXTRACT_CLASS_TYPE = false;
+    private static final boolean EXPAND_MEMBERS = false;
+    private static final String A = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 
     private final TypeDeclaration<?> decl;
     private final ResolvedReferenceTypeDeclaration refType;
@@ -35,7 +37,7 @@ public class ClassType {
 
         // Create the class resource
         Resource res = model.createResource(uri)
-                .addProperty(model.getProperty("http://www.w3.org/2000/01/rdf-schema#type"), model.getResource("http://set.win.tue.nl/ontology#class"))
+                .addProperty(model.getProperty(A), model.getResource("http://set.win.tue.nl/ontology#class"))
                 .addProperty(model.getProperty("http://set.win.tue.nl/ontology#named"), refType.getClassName(), "en");
 
         // Extract & populate class type
@@ -83,6 +85,18 @@ public class ClassType {
         List<FieldDeclaration> fields = decl.getFields();
         fields.forEach(field -> field.getVariables().forEach(variable -> {
             try {
+                if (EXPAND_MEMBERS) {
+                    String varName = variable.getNameAsString();
+                    Resource varRes = model.createResource(uri + "#" + varName)
+                            .addProperty(model.getProperty(A), model.getResource("http://set.win.tue.nl/ontology#variable"))
+                            .addProperty(model.getProperty("http://set.win.tue.nl/ontology#named"), varName, "en");
+                    res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#has_member"), varRes);
+                    if (variable.getType().resolve().isReferenceType()) {
+                        ResolvedReferenceType type = variable.getType().resolve().asReferenceType();
+                        Resource resFtype = model.createResource(String.format("%s%s", Project.URI_PREFIX, type.getQualifiedName()));
+                        varRes.addProperty(model.getProperty(A), resFtype);
+                    }
+                }
                 if (variable.getType().resolve().isReferenceType()) {
                     ResolvedReferenceType type = variable.getType().resolve().asReferenceType();
                     Resource resFtype = model.createResource(String.format("%s%s", Project.URI_PREFIX, type.getQualifiedName()));
@@ -97,6 +111,19 @@ public class ClassType {
         List<MethodDeclaration> methods = decl.getMethods();
         methods.forEach(method -> {
             try {
+                if (EXPAND_MEMBERS) {
+                    String metSig = method.getSignature().asString();
+                    Resource metRes = model.createResource(uri + "#" + metSig)
+                            .addProperty(model.getProperty(A), model.getResource("http://set.win.tue.nl/ontology#function"))
+                            .addProperty(model.getProperty("http://set.win.tue.nl/ontology#named"), method.getNameAsString(), "en");
+                    res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#has_member"), metRes);
+                    // Populate "returns"
+                    if (method.getType().resolve().isReferenceType()) {
+                        ResolvedReferenceType type = method.getType().resolve().asReferenceType();
+                        Resource resFtype = model.createResource(String.format("%s%s", Project.URI_PREFIX, type.getQualifiedName()));
+                        metRes.addProperty(model.getProperty("http://set.win.tue.nl/ontology#has_return_type"), resFtype);
+                    }
+                }
                 // Populate "returns"
                 if (method.getType().resolve().isReferenceType()) {
                     ResolvedReferenceType type = method.getType().resolve().asReferenceType();

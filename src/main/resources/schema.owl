@@ -45,6 +45,11 @@
 	rdfs:subClassOf	:structural_unit;
 	rdfs:comment	"namespace"@en.
 
+:variable
+    rdf:type        rdfs:Class;
+    rdfs:subClassOf :structural_unit;
+    rdfs:comment    "variable"@en.
+
 :function
 	rdf:type		rdfs:Class;
 	rdfs:subClassOf	:callable;
