@@ -1,4 +1,4 @@
-package nl.tue.win.model;
+package nl.tue.win.javajj.model;
 
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Resource;
@@ -20,7 +20,7 @@ public class Package {
     }
 
     public String getName() {
-        return !isDefault() ? name : "(default)";
+        return name;
     }
 
     public boolean isDefault() {
@@ -46,11 +46,11 @@ public class Package {
     public Resource addToModel(Model model) {
         String uri = String.format("%s%s", Project.URI_PREFIX, getName());
         Resource res = model.createResource(uri)
-                .addProperty(model.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), model.getResource("http://set.win.tue.nl/ontology#package"))
+                .addProperty(model.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), model.getResource("http://set.win.tue.nl/ontology#container"))
                 .addProperty(model.getProperty("http://set.win.tue.nl/ontology#named"), getName(), "en");
         classes.values().forEach(cls -> {
             Resource resCls = cls.addToModel(model);
-            res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#has"), resCls);
+            res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#contains"), resCls);
         });
         return res;
     }

@@ -1,9 +1,12 @@
-package nl.tue.win.model;
+package nl.tue.win.javajj.model;
 
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
+import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.resolution.UnsolvedSymbolException;
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
@@ -17,7 +20,7 @@ import java.util.Optional;
 public class ClassType {
 
     private static final boolean EXTRACT_CLASS_TYPE = false;
-    private static final boolean EXPAND_MEMBERS = false;
+    private static final boolean EXPAND_MEMBERS = true;
     private static final String A = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 
     private final TypeDeclaration<?> decl;
@@ -37,7 +40,7 @@ public class ClassType {
 
         // Create the class resource
         Resource res = model.createResource(uri)
-                .addProperty(model.getProperty(A), model.getResource("http://set.win.tue.nl/ontology#class"))
+                .addProperty(model.getProperty(A), model.getResource("http://set.win.tue.nl/ontology#structure"))
                 .addProperty(model.getProperty("http://set.win.tue.nl/ontology#named"), refType.getClassName(), "en");
 
         // Extract & populate class type
@@ -81,26 +84,26 @@ public class ClassType {
             });
         }
 
-        // Extract fields to populate "has"
+        // Extract fields to populate "references"
         List<FieldDeclaration> fields = decl.getFields();
         fields.forEach(field -> field.getVariables().forEach(variable -> {
             try {
                 if (EXPAND_MEMBERS) {
                     String varName = variable.getNameAsString();
-                    Resource varRes = model.createResource(uri + "#" + varName)
+                    Resource varRes = model.createResource(String.format("%s#%s", uri, varName))
                             .addProperty(model.getProperty(A), model.getResource("http://set.win.tue.nl/ontology#variable"))
                             .addProperty(model.getProperty("http://set.win.tue.nl/ontology#named"), varName, "en");
-                    res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#has_member"), varRes);
+                    res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#hasVariable"), varRes);
                     if (variable.getType().resolve().isReferenceType()) {
                         ResolvedReferenceType type = variable.getType().resolve().asReferenceType();
                         Resource resFtype = model.createResource(String.format("%s%s", Project.URI_PREFIX, type.getQualifiedName()));
-                        varRes.addProperty(model.getProperty(A), resFtype);
+                        varRes.addProperty(model.getProperty("http://set.win.tue.nl/ontology#typed"), resFtype);
                     }
                 }
                 if (variable.getType().resolve().isReferenceType()) {
                     ResolvedReferenceType type = variable.getType().resolve().asReferenceType();
                     Resource resFtype = model.createResource(String.format("%s%s", Project.URI_PREFIX, type.getQualifiedName()));
-                    res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#has"), resFtype);
+                    res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#holds"), resFtype);
                 }
             } catch (UnsolvedSymbolException ex) {
                 ex.printStackTrace(System.err);
@@ -112,30 +115,84 @@ public class ClassType {
         methods.forEach(method -> {
             try {
                 if (EXPAND_MEMBERS) {
-                    String metSig = method.getSignature().asString();
-                    Resource metRes = model.createResource(uri + "#" + metSig)
-                            .addProperty(model.getProperty(A), model.getResource("http://set.win.tue.nl/ontology#function"))
+                    String metSig = method.getSignature().asString()
+                            .replace("(", "_")
+                            .replace(")", "_")
+                            .replaceAll(", ", ",");
+                    Resource metRes = model.createResource(String.format("%s#%s", uri, metSig))
+                            .addProperty(model.getProperty(A), model.getResource("http://set.win.tue.nl/ontology#operation"))
                             .addProperty(model.getProperty("http://set.win.tue.nl/ontology#named"), method.getNameAsString(), "en");
-                    res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#has_member"), metRes);
-                    // Populate "returns"
-                    if (method.getType().resolve().isReferenceType()) {
+                    res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#hasScript"), metRes);
+                    // Populate "hasReturnType"
+                    if (method.getType().isReferenceType()) {
                         ResolvedReferenceType type = method.getType().resolve().asReferenceType();
                         Resource resFtype = model.createResource(String.format("%s%s", Project.URI_PREFIX, type.getQualifiedName()));
-                        metRes.addProperty(model.getProperty("http://set.win.tue.nl/ontology#has_return_type"), resFtype);
+                        metRes.addProperty(model.getProperty("http://set.win.tue.nl/ontology#hasReturnType"), resFtype);
                     }
+                    // Populate "hasParameterType"
+                    method.getSignature().getParameterTypes().stream().filter(Type::isReferenceType).forEach(t -> {
+                        try {
+                            ResolvedReferenceType type = t.resolve().asReferenceType();
+                            Resource resFtype = model.createResource(String.format("%s%s", Project.URI_PREFIX, type.getQualifiedName()));
+                            metRes.addProperty(model.getProperty("http://set.win.tue.nl/ontology#hasParameterType"), resFtype);
+                        } catch (Exception ex) {
+                            ex.printStackTrace(System.err);
+                        }
+                    });
                 }
                 // Populate "returns"
-                if (method.getType().resolve().isReferenceType()) {
+                if (method.getType().isReferenceType()) {
                     ResolvedReferenceType type = method.getType().resolve().asReferenceType();
                     Resource resFtype = model.createResource(String.format("%s%s", Project.URI_PREFIX, type.getQualifiedName()));
                     res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#returns"), resFtype);
                 }
+                // Populate "accepts"
+                method.getSignature().getParameterTypes().stream().filter(Type::isReferenceType).forEach(t -> {
+                    try {
+                        ResolvedReferenceType type = t.resolve().asReferenceType();
+                        Resource resFtype = model.createResource(String.format("%s%s", Project.URI_PREFIX, type.getQualifiedName()));
+                        res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#accepts"), resFtype);
+                    } catch (Exception ex) {
+                        ex.printStackTrace(System.err);
+                    }
+                });
+
+                System.out.println();
+                System.out.println(this);
+                System.out.println("method: " + method.getSignature().asString());
+                method.getBody().ifPresent(body -> body.getStatements().forEach(this::processStatement));
             } catch (UnsolvedSymbolException ex) {
                 ex.printStackTrace(System.err);
             }
         });
 
         return res;
+    }
+
+    void processStatement(Statement s) {
+        s.ifExpressionStmt(st -> processExpression(st.getExpression()));
+        s.ifBlockStmt(st -> st.getStatements().forEach(this::processStatement));
+        s.ifWhileStmt(st -> {
+            processStatement(st.getBody());
+            processExpression(st.getCondition());
+        });
+        s.ifForStmt(st -> processStatement(st.getBody()));
+        s.ifForEachStmt(st -> processStatement(st.getBody()));
+        s.ifDoStmt(st -> processStatement(st.getBody()));
+        s.ifIfStmt(st -> {
+            processStatement(st.getThenStmt());
+            st.getElseStmt().ifPresent(this::processStatement);
+        });
+        s.ifSwitchStmt(st -> {
+            processExpression(st.getSelector());
+            st.getEntries().stream()
+                    .flatMap(e -> e.getStatements().stream())
+                    .forEach(this::processStatement);
+        });
+    }
+
+    void processExpression(Expression e) {
+        System.out.println("expression: " + e);
     }
 
     @Override

@@ -3,7 +3,7 @@ package nl.tue.win.javajj;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.visitor.VoidVisitor;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.MemoryTypeSolver;
-import nl.tue.win.model.Project;
+import nl.tue.win.javajj.model.Project;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
 import org.apache.jena.rdf.model.Model;

@@ -10,7 +10,7 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.MemoryTypeSolve
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
 import com.github.javaparser.utils.Pair;
 import com.github.javaparser.utils.SourceZip;
-import nl.tue.win.model.Project;
+import nl.tue.win.javajj.model.Project;
 
 import java.io.IOException;
 import java.nio.file.Path;

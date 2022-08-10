@@ -1,4 +1,4 @@
-package nl.tue.win.model;
+package nl.tue.win.javajj.model;
 
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.Resource;
@@ -44,7 +44,7 @@ public class Project {
                 .addProperty(model.getProperty("http://set.win.tue.nl/ontology#named"), name, "en");
         packages.values().forEach(pkg -> {
             Resource resPkg = pkg.addToModel(model);
-            res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#has"), resPkg);
+            res.addProperty(model.getProperty("http://set.win.tue.nl/ontology#contains"), resPkg);
         });
         return res;
     }

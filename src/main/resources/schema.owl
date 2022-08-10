@@ -8,108 +8,125 @@
 <http://set.win.tue.nl/ontology>
 	rdf:type owl:Ontology .
 
-:structural_unit
-	rdf:type		rdfs:Class;
-	rdf:type		:Class;
-	rdfs:comment	"building blocks of software"@en.
+:container
+    rdf:type        rdfs:Class;
+    rdfs:comment    "Something that can contain a structure (or another container), e.g., package, module, directory, file."@en.
 
-:specializable	
-	rdf:type		rdfs:Class;
-	rdfs:subClassOf	:structural_unit;
-	rdfs:comment	"things that can be inherited from"@en.
+:type
+    rdf:type        rdfs:Class;
+    rdfs:comment    "Something that variable can be a type of; can be a primitive or a structure."@en.
 
-:callable
-	rdf:type		rdfs:Class;
-	rdfs:subClassOf	:structural_unit;
-	rdfs:comment	"things that can be called"@en.
+:structure
+    rdf:type        rdfs:Class;
+    rdfs:subClassOf :type;
+    rdfs:subClassOf :container;
+    rdfs:comment    "A complex/compound type, e.g., a class, record, struct, etc."@en.
 
+:primitive
+    rdf:type        rdfs:Class;
+    rdfs:subClassOf :type;
+    rdfs:comment    "A primitive type, e.g., int, boolean."@en.
 
-:class
-	rdf:type		rdfs:Class;
-	rdfs:subClassOf	:specializable;
-	rdfs:subClassOf	:callable;
-	rdfs:comment	"class"@en.
+:script
+    rdf:type        rdfs:Class;
+    rdfs:comment    "A collection of program statements."@en.
 
-:project
-	rdf:type		rdfs:Class;
-	rdfs:subClassOf	:structural_unit;
-	rdfs:comment	"package"@en.
+:operation
+    rdf:type        rdfs:Class;
+    rdfs:subClassOf :script;
+    rdfs:comment    "A script that has a name/signature, i.e., a function, procedure, or method."@en.
 
-:package	
-	rdf:type		rdfs:Class;
-	rdfs:subClassOf	:specializable;
-	rdfs:comment	"package"@en.
-
-:namespace
-	rdf:type		rdfs:Class;
-	rdfs:subClassOf	:structural_unit;
-	rdfs:comment	"namespace"@en.
+:constructor
+    rdf:type        rdfs:Class;
+    rdfs:subClassOf :operation;
+    rdfs:comment    "A special type of operation that instantiates a structure/initializes an object."@en.
 
 :variable
     rdf:type        rdfs:Class;
-    rdfs:subClassOf :structural_unit;
-    rdfs:comment    "variable"@en.
-
-:function
-	rdf:type		rdfs:Class;
-	rdfs:subClassOf	:callable;
-	rdfs:comment	"function"@en.
+    rdfs:comment    "Something that holds value(s), e.g., a variable or a field in a class."@en.
 
 
-:has_return_type
-	rdf:type		rdf:Property;
-	rdfs:subClassOf :edge;
-	rdfs:domain		:callable;
-	rdfs:range		:class;
-	rdfs:comment	"function has a return type of a certain class"@en.
+:typed
+    rdf:type        rdf:Property;
+    rdfs:domain     :variable;
+    rdfs:range      :type;
+    rdfs:comment    "A property that defines a variable's type."@en.
 
-:has_parameter_type
-	rdf:type		rdf:Property;
-	rdfs:subClassOf :edge;
-	rdfs:domain		:callable;
-	rdfs:range		:class;
-	rdfs:comment	"function has a parameter type of a certain class"@en.
+:specializes
+    rdf:type        rdf:Property;
+    rdfs:domain     :structure;
+    rdfs:range      :structure;
+    rdfs:comment    "A property that defines structure specialization, e.g., a structure is a subclass of another structure."@en.
 
-:constructor
-	rdf:type		rdfs:Class;
-	rdfs:subClassOf :function;
-	rdfs:comment	"constructs a class"@en.
+:hasVariable
+    rdf:type        rdf:Property;
+    rdfs:domain     :structure;
+    rdfs:range      :variable;
+    rdfs:comment    "A property that defines the data part of a structure, e.g., attributes of a class."@en.
 
-:edge   
-	rdf:type		rdf:Property;
-	rdfs:domain		:structural_unit;
-	rdfs:range	   	:structural_unit;
-	rdfs:comment	"abstract link between structural units"@en.
+:hasScript
+    rdf:type        rdf:Property;
+    rdfs:domain     :structure;
+    rdfs:range      :script;
+    rdfs:comment    "A property that defines behaviors of a structure, e.g., methods in a class."@en.
 
-:calls
-	rdf:type			rdf:Property;
-	rdfs:subPropertyOf	:edge;
-	rdfs:comment	 	"structural unit calls a function of another unit"@en.
+:instantiates
+    rdf:type        rdf:Property;
+    rdfs:domain     :script;
+    rdfs:range      :structure;
+    rdfs:comment    "A property that shows that a script contains a call to a structure's constructor."@en.
 
-:creates
-	rdf:type			rdf:Property;
-	rdfs:subPropertyOf	:calls;
-	rdfs:comment		"structural unit calls a constructor of another unit"@en.
+:invokes
+    rdf:type        rdf:Property;
+    rdfs:domain     :script;
+    rdfs:range      :operation;
+    rdfs:comment    "A property that shows that a script contains a call to an operation."@en.
+
+:hasReturnType
+    rdf:type        rdf:Property;
+    rdfs:domain     :operation;
+    rdfs:range      :type;
+    rdfs:comment    "A property that defines the return type of an operation."@en.
+
+:hasParameterType
+    rdf:type        rdf:Property;
+    rdfs:domain     :operation;
+    rdfs:range      :type;
+    rdfs:comment    "A property that defines a parameter type that an operation accepts."@en.
+
+
+:depends
+    rdf:type        rdf:Property;
+    rdfs:domain     :structure;
+    rdfs:range      :structure;
+    rdfs:comment    "A property that defines an operational dependency between classes; a simplification of the hasScript->invokes properties."@en.
+
+:constructs
+    rdf:type        rdf:Property;
+    rdfs:domain     :structure;
+    rdfs:range      :structure;
+    rdfs:comment    "A property shows that a structure calls another structure's constructor; a simplification of the hasScript->instantiates properties."@en.
+
+:holds
+    rdf:type        rdf:Property;
+    rdfs:domain     :structure;
+    rdfs:range      :type;
+    rdfs:comment    "A property that defines a has-a relationship between a structure and a type; a simplification of the hasVariable->typed properties."@en.
+
+:depends
+    rdf:type        rdf:Property;
+    rdfs:domain     :structure;
+    rdfs:range      :type;
+    rdfs:comment    "A property that shows that a structure accepts a type as parameter to its operation(s); a simplification of the hasScript->hasParameterType properties."@en.
 
 :returns
-	rdf:type			rdf:Property;
-	rdfs:subPropertyOf	:edge;
-	rdfs:comment	 	"structural unit returns an object of another unit"@en.
+    rdf:type        rdf:Property;
+    rdfs:domain     :structure;
+    rdfs:range      :type;
+    rdfs:comment    "A property that shows that a structure has operation(s) that returns a value with particular type; a simplification of the hasScript->returnType properties."@en.
 
-:specializes	
-	rdf:type			rdf:Property;
-	rdfs:subPropertyOf	:edge;
-	rdfs:comment		"structural unit specializes another structural unit"@en.
 
-:references
-	rdf:type			rdf:Property;
-	rdfs:subPropertyOf	:edge;
-	rdfs:comment		"structural unit accepts another unit as parameter to its function"@en.
 
-:has
-	rdf:type			rdf:Property;
-	rdfs:subPropertyOf	:edge;
-	rdfs:comment		"structural unit contains another unit"@en.
 
 :named
 	rdf:type		rdf:Property;
@@ -119,9 +136,9 @@
 
 :kind
 	rdf:type		rdf:Property;
-	rdfs:domain		:class;
+	rdfs:domain		:structure;
 	rdfs:range		rdfs:Literal;
-	rdfs:comment	"kind of a class"@en.
+	rdfs:comment	"The kind of a class, e.g., abstract, interface, enum."@en.
 
 :design_pattern
 	rdf:type		rdfs:Class;

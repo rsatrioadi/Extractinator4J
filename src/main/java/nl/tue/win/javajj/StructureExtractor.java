@@ -1,42 +1,45 @@
 package nl.tue.win.javajj;
 
-import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.EnumDeclaration;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
-import nl.tue.win.model.ClassType;
-import nl.tue.win.model.Package;
-import nl.tue.win.model.Project;
+import nl.tue.win.javajj.model.ClassType;
+import nl.tue.win.javajj.model.Package;
+import nl.tue.win.javajj.model.Project;
 
 public class StructureExtractor extends VoidVisitorAdapter<Project> {
-
-    private Package currentPackage;
-    private ClassType currentClass;
-
-    @Override
-    public void visit(PackageDeclaration decl, Project prj) {
-        currentPackage = prj.getPackage(decl.getNameAsString()).orElse(new Package(decl.getNameAsString()));
-        prj.addPackage(currentPackage);
-        super.visit(decl, prj);
-    }
 
     @Override
     public void visit(ClassOrInterfaceDeclaration decl, Project prj) {
         String fullName = decl.resolve().getQualifiedName();
-        currentClass = currentPackage
+        String pkgname = decl.resolve().getPackageName();
+        if (pkgname == null) {
+            pkgname = "";
+        }
+        Package pkg = prj.getPackage(pkgname).orElse(new Package(pkgname));
+        prj.addPackage(pkg);
+
+        ClassType cls = pkg
                 .getClass(fullName)
                 .orElse(new ClassType(decl));
-        currentPackage.addClass(currentClass);
+        pkg.addClass(cls);
         super.visit(decl, prj);
     }
 
     @Override
     public void visit(EnumDeclaration decl, Project prj) {
         String fullName = decl.resolve().getQualifiedName();
-        currentClass = currentPackage
+        String pkgname = decl.resolve().getPackageName();
+        if (pkgname == null) {
+            pkgname = "";
+        }
+        Package pkg = prj.getPackage(pkgname).orElse(new Package(pkgname));
+        prj.addPackage(pkg);
+
+        ClassType cls = pkg
                 .getClass(fullName)
                 .orElse(new ClassType(decl));
-        currentPackage.addClass(currentClass);
+        pkg.addClass(cls);
         super.visit(decl, prj);
     }
 }
