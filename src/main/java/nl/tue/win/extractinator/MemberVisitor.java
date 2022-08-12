@@ -181,10 +181,10 @@ public class MemberVisitor extends VoidVisitorAdapter<Graph> {
 
     @Override
     public void visit(MethodCallExpr expr, Graph g) {
-
-        // depends (calls a method of)
         g.getNode(currentClass).ifPresent(cls -> new Resolver<>(expr).getResolved()
                 .ifPresent(methodCall -> {
+
+                    // depends (calls a method of)
                     String ownerName = methodCall.declaringType().asReferenceType().getQualifiedName();
                     Optional<Node> owner = g.getNode(ownerName);
                     if (owner.isPresent() && !currentClass.equals(ownerName)) {
@@ -192,20 +192,24 @@ public class MemberVisitor extends VoidVisitorAdapter<Graph> {
                                 .addToWeight(new Edge(cls, owner.get(), "depends"));
                     }
                 }));
+
+        super.visit(expr, g);
     }
 
     @Override
     public void visit(ObjectCreationExpr expr, Graph g) {
-
-        // constructs (calls a constructor of)
         g.getNode(currentClass).ifPresent(cls -> new Resolver<>(expr).getResolved()
-                .ifPresent(methodCall -> {
-                    String ownerName = methodCall.declaringType().asReferenceType().getQualifiedName();
+                .ifPresent(ctorCall -> {
+
+                    // constructs (calls a constructor of)
+                    String ownerName = ctorCall.declaringType().asReferenceType().getQualifiedName();
                     Optional<Node> owner = g.getNode(ownerName);
                     if (owner.isPresent() && !currentClass.equals(ownerName)) {
                         g.getEdges()
                                 .addToWeight(new Edge(cls, owner.get(), "constructs"));
                     }
                 }));
+
+        super.visit(expr, g);
     }
 }
