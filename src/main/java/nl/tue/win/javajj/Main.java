@@ -3,6 +3,8 @@ package nl.tue.win.javajj;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.visitor.VoidVisitor;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.MemoryTypeSolver;
+import nl.tue.win.extractinator.ProjectLoader;
+import nl.tue.win.extractinator.TypeSolvingVisitor;
 import nl.tue.win.javajj.model.Project;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
@@ -31,7 +33,7 @@ public class Main {
 
             // Populate memory-based type solver
             units.forEach(unit -> {
-                VoidVisitor<MemoryTypeSolver> visitor = new MemoryVisitor();
+                VoidVisitor<MemoryTypeSolver> visitor = new TypeSolvingVisitor();
                 visitor.visit(unit, loader.getMemSolver());
             });
 

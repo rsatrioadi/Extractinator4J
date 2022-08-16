@@ -1,4 +1,4 @@
-package nl.tue.win.javajj;
+package nl.tue.win.extractinator;
 
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ParserConfiguration;
@@ -27,11 +27,13 @@ public class ProjectLoader {
     private final TypeSolver typeSolver;
     private final MemoryTypeSolver memSolver;
     private final String fileName;
+    private final String outputPrefix;
 
     public ProjectLoader(String[] args) {
         this.args = args;
         this.project = new Project(getName());
-        this.fileName = args[args.length - 1];
+        this.fileName = args[args.length - 2];
+        this.outputPrefix = args[args.length - 1];
         this.memSolver = new MemoryTypeSolver();
         this.typeSolver = new CombinedTypeSolver(
                 new ReflectionTypeSolver(),
@@ -41,6 +43,10 @@ public class ProjectLoader {
 
     public String getName() {
         return args[args.length - 1].replace(".zip", "");
+    }
+
+    public String getOutputPrefix() {
+        return outputPrefix;
     }
 
     public TypeSolver getTypeSolver() {
