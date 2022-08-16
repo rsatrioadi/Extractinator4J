@@ -122,7 +122,7 @@ public class FactsCollector extends VoidVisitorAdapter<Map<String, Facts>> {
                             || n instanceof SwitchStmt).distinct().count());
                 }
             } catch (Exception e) {
-                System.err.println(e);
+                e.printStackTrace(System.err);
             }
         });
 
@@ -153,7 +153,7 @@ public class FactsCollector extends VoidVisitorAdapter<Map<String, Facts>> {
                             || n instanceof SwitchStmt).distinct().count());
                 }
             } catch (Exception e) {
-                System.err.println(e);
+                e.printStackTrace(System.err);
             }
         });
 
