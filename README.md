@@ -1,15 +1,3 @@
-## JavaJJ: Java program fact extractor
+## Extractinator4J: Java program fact extractor
 
-Takes a zip file containing a java project (source files) and outputs Turtle-serialized facts about the project.
-
-Usage:
-
-```shell
-$ <java execution> <java project zip file path>
-```
-
-e.g.,
-
-```shell
-$ java -jar JavaJJ.jar JHotDraw.zip
-```
+Takes a zip file containing a java project (source files) and outputs dependency graph as list of nodes (in a CSV file) and list of edges (also a CSV file).
