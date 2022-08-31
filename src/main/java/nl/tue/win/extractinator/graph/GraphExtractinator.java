@@ -36,7 +36,7 @@ public class GraphExtractinator {
 
             // Extract edges from AST
             units.forEach(unit -> {
-                VoidVisitor<Graph> visitor = new EdgeCollector();
+                VoidVisitor<Graph> visitor = new EdgeCollector(loader.getMemSolver());
                 visitor.visit(unit, graph);
             });
 

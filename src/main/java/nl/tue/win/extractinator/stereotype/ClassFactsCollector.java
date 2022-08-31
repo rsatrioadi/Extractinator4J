@@ -1,7 +1,10 @@
 package nl.tue.win.extractinator.stereotype;
 
 import com.github.javaparser.ast.Modifier;
-import com.github.javaparser.ast.body.*;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.EnumDeclaration;
+import com.github.javaparser.ast.body.TypeDeclaration;
+import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
@@ -19,6 +22,26 @@ import java.util.stream.Collectors;
 
 public class ClassFactsCollector extends VoidVisitorAdapter<Map<String, ClassFacts>> {
 
+    public static Function<ResolvedReferenceTypeDeclaration, List<ResolvedReferenceType>> resolvedTraverser = (rrtd) -> {
+        List<ResolvedReferenceType> ancestors = new ArrayList<>();
+        // We want to avoid infinite recursion in case of Object having Object as ancestor
+        if (!rrtd.isJavaLangObject()) {
+            for (ResolvedReferenceType ancestor : rrtd.getAncestors(true)) {
+                List<ResolvedReferenceType> moreAncestors = new ArrayList<>();
+                moreAncestors.add(ancestor);
+                while (!moreAncestors.isEmpty()) {
+                    ancestors.addAll(moreAncestors);
+                    moreAncestors = moreAncestors.stream()
+                            .filter(a -> !a.isJavaLangObject())
+                            .flatMap(a -> a.getTypeDeclaration().stream()
+                                    .flatMap(t -> t.getAncestors(true).stream()))
+                            .distinct()
+                            .collect(Collectors.toList());
+                }
+            }
+        }
+        return ancestors;
+    };
     private final Set<String> stopWords = Set.of("a", "about", "above", "after", "again", "against", "all", "am", "an",
             "and", "any", "are", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between",
             "both", "but", "by", "can't", "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't",
@@ -35,7 +58,6 @@ public class ClassFactsCollector extends VoidVisitorAdapter<Map<String, ClassFac
             "whom", "why", "why's", "with", "won't", "would", "wouldn't", "you", "you'd", "you'll", "you're", "you've",
             "your", "yours", "yourself", "yourselves");
     private final DefaultPrinterConfiguration config;
-    private String currentClass;
 
     {
         config = new DefaultPrinterConfiguration();
@@ -45,11 +67,10 @@ public class ClassFactsCollector extends VoidVisitorAdapter<Map<String, ClassFac
     }
 
     private void visitStructure(TypeDeclaration<?> decl, Map<String, ClassFacts> facts) {
-        currentClass = null;
 
         new Resolver<>((Resolvable<ResolvedReferenceTypeDeclaration>) decl).getResolution().ifPresent(cls -> {
 
-            currentClass = cls.getQualifiedName();
+            String currentClass = cls.getQualifiedName();
             if (!facts.containsKey(currentClass)) facts.put(currentClass, new ClassFacts());
             ClassFacts f = facts.get(currentClass);
 
@@ -172,6 +193,15 @@ public class ClassFactsCollector extends VoidVisitorAdapter<Map<String, ClassFac
                             .filter(m -> m.hasModifier(Modifier.Keyword.STATIC))
                             .count());
 
+            f.put(ClassFacts.Type.numGetters,
+                    decl.getMethods().stream()
+                            .filter(m -> m.getNameAsString().matches("^(get|is)[A-Z].*"))
+                            .count());
+            f.put(ClassFacts.Type.numSetters,
+                    decl.getMethods().stream().filter(m -> m.getNameAsString().matches("^set[A-Z].*"))
+                            .count());
+
+
             f.put(ClassFacts.Type.numHiddenFields,
                     decl.getFields().stream()
                             .filter(m -> m.hasModifier(Modifier.Keyword.PRIVATE) || m.hasModifier(Modifier.Keyword.PROTECTED))
@@ -202,25 +232,4 @@ public class ClassFactsCollector extends VoidVisitorAdapter<Map<String, ClassFac
         visitStructure(decl, facts);
         super.visit(decl, facts);
     }
-
-    public static Function<ResolvedReferenceTypeDeclaration, List<ResolvedReferenceType>> resolvedTraverser = (rrtd) -> {
-        List<ResolvedReferenceType> ancestors = new ArrayList<>();
-        // We want to avoid infinite recursion in case of Object having Object as ancestor
-        if (!rrtd.isJavaLangObject()) {
-            for (ResolvedReferenceType ancestor : rrtd.getAncestors(true)) {
-                List<ResolvedReferenceType> moreAncestors = new ArrayList<>();
-                moreAncestors.add(ancestor);
-                while (!moreAncestors.isEmpty()) {
-                    ancestors.addAll(moreAncestors);
-                    moreAncestors = moreAncestors.stream()
-                            .filter(a -> !a.isJavaLangObject())
-                            .flatMap(a -> a.getTypeDeclaration().stream()
-                                    .flatMap(t -> t.getAncestors(true).stream()))
-                            .distinct()
-                            .collect(Collectors.toList());
-                }
-            }
-        }
-        return ancestors;
-    };
 }

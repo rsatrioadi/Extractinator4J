@@ -31,7 +31,7 @@ public class StereotypeExtractinator {
                 visitor.visit(unit, loader.getMemSolver());
             });
 
-            StringBuilder classResult = new StringBuilder("scope,")
+            StringBuilder classResult = new StringBuilder("class,")
                     .append(Arrays.stream(ClassFacts.Type.values())
                             .map(Object::toString)
                             .collect(Collectors.joining(",")))
@@ -64,7 +64,7 @@ public class StereotypeExtractinator {
             Path classOutput = Paths.get(String.format("%s-classFacts.csv", loader.getOutputPrefix()));
             Files.write(classOutput, classResult.toString().getBytes());
 
-            StringBuilder methodResult = new StringBuilder("scope,")
+            StringBuilder methodResult = new StringBuilder("class,method,")
                     .append(Arrays.stream(MethodFacts.Type.values())
                             .map(Object::toString)
                             .collect(Collectors.joining(",")))
@@ -79,9 +79,13 @@ public class StereotypeExtractinator {
                         .sorted()
                         .forEach(key -> {
                             MethodFacts f = facts.get(key);
-                            methodResult.append(key.contains(",")
-                                            ? String.format("\"%s\"", key.replaceAll("\"", "\"\""))
-                                            : key)
+                            String[] keys = key.split("#");
+                            methodResult
+                                    .append(keys[0])
+                                    .append(',')
+                                    .append(keys[1].contains(",")
+                                            ? String.format("\"%s\"", keys[1].replaceAll("\"", "\"\""))
+                                            : keys[1])
                                     .append(',')
                                     .append(Arrays.stream(MethodFacts.Type.values())
                                             .map(k -> f.getOrDefault(k, "").toString())

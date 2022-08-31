@@ -6,8 +6,9 @@ import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.resolution.Resolvable;
-import com.github.javaparser.resolution.declarations.ResolvedValueDeclaration;
 import com.github.javaparser.resolution.types.ResolvedType;
+import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade;
+import com.github.javaparser.symbolsolver.model.resolution.TypeSolver;
 import nl.tue.win.graph.Edge;
 import nl.tue.win.graph.Graph;
 import nl.tue.win.graph.Node;
@@ -17,7 +18,12 @@ import java.util.stream.Stream;
 
 public class EdgeCollector extends VoidVisitorAdapter<Graph> {
 
+    private final TypeSolver solver;
     private String currentClass;
+
+    public EdgeCollector(TypeSolver solver) {
+        this.solver = solver;
+    }
 
     private Stream<String> qualifiedNamesFromResolvables(Stream<? extends Resolvable<ResolvedType>> stream) {
         return stream
@@ -31,6 +37,7 @@ public class EdgeCollector extends VoidVisitorAdapter<Graph> {
     @Override
     public void visit(ClassOrInterfaceDeclaration decl, Graph g) {
 
+        String prevClass = currentClass;
         currentClass = null;
 
         new Resolver<>(decl).getResolution().ifPresent(cls -> {
@@ -89,11 +96,13 @@ public class EdgeCollector extends VoidVisitorAdapter<Graph> {
         });
 
         super.visit(decl, g);
+        currentClass = prevClass;
     }
 
     @Override
     public void visit(EnumDeclaration decl, Graph g) {
 
+        String prevClass = currentClass;
         currentClass = null;
 
         new Resolver<>(decl).getResolution().ifPresent(enm -> {
@@ -146,6 +155,7 @@ public class EdgeCollector extends VoidVisitorAdapter<Graph> {
         });
 
         super.visit(decl, g);
+        currentClass = prevClass;
     }
 
     @Override
@@ -186,22 +196,21 @@ public class EdgeCollector extends VoidVisitorAdapter<Graph> {
     public void visit(FieldAccessExpr expr, Graph g) {
         g.getNode(currentClass).ifPresent(cls -> {
             try {
-                Resolvable scope = (Resolvable) expr.getScope();
-                new Resolver<>(scope).getResolution().ifPresent(res -> {
-                    if (res instanceof ResolvedValueDeclaration) {
-                        ResolvedValueDeclaration type = (ResolvedValueDeclaration) res;
-                        if (type.getType().isReferenceType()) {
-                            String name = type.getType().asReferenceType().getQualifiedName();
-                            Optional<Node> owner = g.getNode(name);
-                            if (owner.isPresent() && !currentClass.equals(name)) {
-                                g.getEdges()
-                                        .addToWeight(new Edge(cls, owner.get(), "accesses"));
-                            }
-                        }
+                ResolvedType scopeType = JavaParserFacade.get(solver).getType(expr.getScope());
+//                System.out.println("resolved " + expr + " at " + currentClass + " as " + scopeType);
+
+                if (scopeType.isReferenceType()) {
+
+                    // accesses a field of
+                    String ownerName = scopeType.asReferenceType().getQualifiedName();
+                    Optional<Node> owner = g.getNode(ownerName);
+                    if (owner.isPresent() && !currentClass.equals(ownerName)) {
+                        g.getEdges()
+                                .addToWeight(new Edge(cls, owner.get(), "accesses"));
                     }
-                });
+                }
             } catch (Exception e) {
-                System.err.printf("%s not resolvable%n", expr.getScope());
+                System.err.println("unresolved " + expr + " at " + currentClass);
             }
         });
         super.visit(expr, g);

@@ -9,6 +9,7 @@ public class ClassFacts extends HashMap<ClassFacts.Type, Object> {
         isInterface, isClass, isEnum, isAbstract, isFinal, isAnonymous, isStatic,
         numFields, numBooleanFields, numPrimitiveFields, numStringFields, numCollectionFields, numMapFields, numArrayFields,
         numHiddenFields, numVisibleFields, numStaticFields,
+        numGetters, numSetters,
         numHiddenMethods, numVisibleMethods, numStaticMethods,
         isCollection, isMap
     }

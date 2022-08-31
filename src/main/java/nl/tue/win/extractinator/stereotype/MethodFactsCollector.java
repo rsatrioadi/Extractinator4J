@@ -12,7 +12,6 @@ import com.github.javaparser.printer.configuration.DefaultPrinterConfiguration;
 import com.github.javaparser.resolution.Resolvable;
 import com.github.javaparser.resolution.declarations.ResolvedMethodLikeDeclaration;
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
-import com.github.javaparser.resolution.declarations.ResolvedValueDeclaration;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
 import com.github.javaparser.resolution.types.ResolvedType;
 import nl.tue.win.extractinator.graph.Resolver;
@@ -66,6 +65,12 @@ public class MethodFactsCollector extends VoidVisitorAdapter<Map<String, MethodF
                         decl.hasModifier(Modifier.Keyword.FINAL));
                 f.put(MethodFacts.Type.isStatic,
                         decl.hasModifier(Modifier.Keyword.STATIC));
+
+                f.put(MethodFacts.Type.isGetter,
+                        decl.getNameAsString().matches("^(get|is)[A-Z].*"));
+                f.put(MethodFacts.Type.isSetter,
+                        decl.getNameAsString().matches("^set[A-Z].*"));
+
 
                 f.put(MethodFacts.Type.numExpressions,
                         decl.stream()

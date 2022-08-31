@@ -7,6 +7,7 @@ public class MethodFacts extends HashMap<MethodFacts.Type, Object> {
     enum Type {
         words, numConditionals, numLoops, numStatements, numExpressions,
         isAbstract, isFinal, isStatic,
+        isGetter, isSetter,
         numVars, numBooleanVars, numPrimitiveVars, numStringVars, numCollectionVars, numMapVars, numArrayVars,
         numParams, numBooleanParams, numPrimitiveParams, numStringParams, numCollectionParams, numMapParams, numArrayParams
     }
