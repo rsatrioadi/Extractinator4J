@@ -10,9 +10,11 @@ import nl.tue.win.extractinator.TypeSolvingVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class StereotypeExtractinator {
 
@@ -29,42 +31,67 @@ public class StereotypeExtractinator {
                 visitor.visit(unit, loader.getMemSolver());
             });
 
-            StringBuilder result = new StringBuilder("scope,words,numConditionals,numLoops,numStatements,numExpressions\n");
+            StringBuilder classResult = new StringBuilder("scope,")
+                    .append(Arrays.stream(ClassFacts.Type.values())
+                            .map(Object::toString)
+                            .collect(Collectors.joining(",")))
+                    .append("\n");
 
-            // Extract words
             units.forEach(unit -> {
-                Map<String, Facts> facts = new HashMap<>();
-                VoidVisitor<Map<String, Facts>> visitor = new FactsCollector();
+                Map<String, ClassFacts> facts = new HashMap<>();
+                VoidVisitor<Map<String, ClassFacts>> visitor = new ClassFactsCollector();
                 visitor.visit(unit, facts);
 
                 facts.keySet().stream()
                         .sorted()
                         .forEach(key -> {
-                            Facts f = facts.get(key);
-                            List<String> words = f.getWords();
-                            result.append(key.contains(",")
-                                            ? String.format("\"%s\"", key.replaceAll("\"", "\\\""))
+                            ClassFacts f = facts.get(key);
+                            classResult.append(key.contains(",")
+                                            ? String.format("\"%s\"", key.replaceAll("\"", "\"\""))
                                             : key)
-                                    .append(",")
-                                    .append(String.join(" ", words))
-                                    .append(",")
-                                    .append(f.getNumConditionals())
-                                    .append(",")
-                                    .append(f.getNumLoops())
-                                    .append(",")
-                                    .append(f.getNumStatements())
-                                    .append(",")
-                                    .append(f.getNumExpressions())
+                                    .append(',')
+                                    .append(Arrays.stream(ClassFacts.Type.values())
+                                            .map(k -> f.getOrDefault(k, "").toString())
+                                            .collect(Collectors.joining(",")))
                                     .append("\n");
 
+                            String words = (String) f.get(ClassFacts.Type.words);
                             System.out.println("# " + key);
-                            System.out.println(new Counter<>(words).entrySet());
-
+                            System.out.println(new Counter<>(Arrays.stream(words.split(" ")).filter(s -> !s.isBlank()).collect(Collectors.toList())).entrySet());
                         });
             });
 
-            Path nodeOutput = Paths.get(String.format("%s-facts.csv", loader.getOutputPrefix()));
-            Files.write(nodeOutput, result.toString().getBytes());
+            Path classOutput = Paths.get(String.format("%s-classFacts.csv", loader.getOutputPrefix()));
+            Files.write(classOutput, classResult.toString().getBytes());
+
+            StringBuilder methodResult = new StringBuilder("scope,")
+                    .append(Arrays.stream(MethodFacts.Type.values())
+                            .map(Object::toString)
+                            .collect(Collectors.joining(",")))
+                    .append("\n");
+
+            units.forEach(unit -> {
+                Map<String, MethodFacts> facts = new HashMap<>();
+                VoidVisitor<Map<String, MethodFacts>> visitor = new MethodFactsCollector();
+                visitor.visit(unit, facts);
+
+                facts.keySet().stream()
+                        .sorted()
+                        .forEach(key -> {
+                            MethodFacts f = facts.get(key);
+                            methodResult.append(key.contains(",")
+                                            ? String.format("\"%s\"", key.replaceAll("\"", "\"\""))
+                                            : key)
+                                    .append(',')
+                                    .append(Arrays.stream(MethodFacts.Type.values())
+                                            .map(k -> f.getOrDefault(k, "").toString())
+                                            .collect(Collectors.joining(",")))
+                                    .append("\n");
+                        });
+            });
+
+            Path methodOutput = Paths.get(String.format("%s-methodFacts.csv", loader.getOutputPrefix()));
+            Files.write(methodOutput, methodResult.toString().getBytes());
 
         } catch (Exception e) {
             e.printStackTrace(System.err);

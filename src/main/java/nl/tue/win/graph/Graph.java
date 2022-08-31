@@ -1,17 +1,27 @@
 package nl.tue.win.graph;
 
+import java.util.HashMap;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class Graph {
-    private final String id;
+public class Graph extends HashMap<String, Object> {
     private final Nodes nodes;
     private final Edges edges;
 
-    public Graph(String id, Nodes nodes, Edges edges) {
-        this.id = id;
+    public Graph(String id, boolean directed, Nodes nodes, Edges edges) {
+        if (id == null) id = "";
+        this.put("id", id);
+        this.put("directed", directed);
         this.nodes = nodes;
         this.edges = edges;
+    }
+
+    public Graph(String id, Nodes nodes, Edges edges) {
+        this(id, false, nodes, edges);
+    }
+
+    public Graph(String id, boolean directed) {
+        this(id, true, new Nodes(), new Edges());
     }
 
     public Graph(String id) {
@@ -19,7 +29,7 @@ public class Graph {
     }
 
     public String getId() {
-        return id;
+        return getOrDefault("id", "").toString();
     }
 
     public Nodes getNodes() {

@@ -1,10 +1,12 @@
 package nl.tue.win.extractinator.graph;
 
 import com.github.javaparser.ast.body.*;
+import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.resolution.Resolvable;
+import com.github.javaparser.resolution.declarations.ResolvedValueDeclaration;
 import com.github.javaparser.resolution.types.ResolvedType;
 import nl.tue.win.graph.Edge;
 import nl.tue.win.graph.Graph;
@@ -177,6 +179,31 @@ public class EdgeCollector extends VoidVisitorAdapter<Graph> {
                     }
                 }));
 
+        super.visit(expr, g);
+    }
+
+    @Override
+    public void visit(FieldAccessExpr expr, Graph g) {
+        g.getNode(currentClass).ifPresent(cls -> {
+            try {
+                Resolvable scope = (Resolvable) expr.getScope();
+                new Resolver<>(scope).getResolution().ifPresent(res -> {
+                    if (res instanceof ResolvedValueDeclaration) {
+                        ResolvedValueDeclaration type = (ResolvedValueDeclaration) res;
+                        if (type.getType().isReferenceType()) {
+                            String name = type.getType().asReferenceType().getQualifiedName();
+                            Optional<Node> owner = g.getNode(name);
+                            if (owner.isPresent() && !currentClass.equals(name)) {
+                                g.getEdges()
+                                        .addToWeight(new Edge(cls, owner.get(), "accesses"));
+                            }
+                        }
+                    }
+                });
+            } catch (Exception e) {
+                System.err.printf("%s not resolvable%n", expr.getScope());
+            }
+        });
         super.visit(expr, g);
     }
 }
