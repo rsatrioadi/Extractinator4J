@@ -14,12 +14,10 @@ import com.github.javaparser.resolution.declarations.ResolvedMethodLikeDeclarati
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
 import com.github.javaparser.resolution.types.ResolvedType;
+import nl.tue.win.collections.StringList;
 import nl.tue.win.extractinator.graph.Resolver;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class MethodFactsCollector extends VoidVisitorAdapter<Map<String, MethodFacts>> {
@@ -57,7 +55,11 @@ public class MethodFactsCollector extends VoidVisitorAdapter<Map<String, MethodF
                 MethodFacts f = facts.get(key);
 
                 WordsExtractor we = new WordsExtractor(decl.toString(config));
-                f.put(MethodFacts.Type.words, String.join(" ", we.getOutput(stopWords)));
+                StringList words = new StringList(we.getOutput(stopWords));
+                f.put(MethodFacts.Type.words,
+                        words);
+                f.put(MethodFacts.Type.numUniqueWords,
+                        (long) new HashSet<>(words).size());
 
                 f.put(MethodFacts.Type.isAbstract,
                         decl.hasModifier(Modifier.Keyword.ABSTRACT));
@@ -104,7 +106,7 @@ public class MethodFactsCollector extends VoidVisitorAdapter<Map<String, MethodF
                         .collect(Collectors.toUnmodifiableList());
 
                 f.put(MethodFacts.Type.numVars,
-                        varTypes.size());
+                        (long) varTypes.size());
                 f.put(MethodFacts.Type.numBooleanVars,
                         varTypes.stream()
                                 .filter(Type::isPrimitiveType)
@@ -157,7 +159,7 @@ public class MethodFactsCollector extends VoidVisitorAdapter<Map<String, MethodF
                         .collect(Collectors.toUnmodifiableList());
 
                 f.put(MethodFacts.Type.numParams,
-                        paramTypes.size());
+                        (long) paramTypes.size());
                 f.put(MethodFacts.Type.numBooleanParams,
                         paramTypes.stream()
                                 .filter(Type::isPrimitiveType)
@@ -206,7 +208,7 @@ public class MethodFactsCollector extends VoidVisitorAdapter<Map<String, MethodF
                                 .count());
 
             } catch (Throwable e) {
-                e.printStackTrace(System.err);
+                System.err.println("unable to resolve " + decl.getSignature());
             }
         });
 

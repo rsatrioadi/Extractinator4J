@@ -197,7 +197,6 @@ public class EdgeCollector extends VoidVisitorAdapter<Graph> {
         g.getNode(currentClass).ifPresent(cls -> {
             try {
                 ResolvedType scopeType = JavaParserFacade.get(solver).getType(expr.getScope());
-//                System.out.println("resolved " + expr + " at " + currentClass + " as " + scopeType);
 
                 if (scopeType.isReferenceType()) {
 

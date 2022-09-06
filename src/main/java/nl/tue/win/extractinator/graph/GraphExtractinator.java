@@ -42,9 +42,11 @@ public class GraphExtractinator {
 
 //            System.out.println(graph);
             Path nodeOutput = Paths.get(String.format("%s-nodes.csv", loader.getOutputPrefix()));
-            Path edgeOutput = Paths.get(String.format("%s-edges.csv", loader.getOutputPrefix()));
             Files.write(nodeOutput, graph.getNodes().toString().getBytes());
+            Path edgeOutput = Paths.get(String.format("%s-edges.csv", loader.getOutputPrefix()));
             Files.write(edgeOutput, graph.getEdges().toString().getBytes());
+            Path rsfOutput = Paths.get(String.format("%s-deps.rsf", loader.getOutputPrefix()));
+            Files.write(rsfOutput, graph.getEdges().toRSF().getBytes());
 
         } catch (Exception e) {
             e.printStackTrace(System.err);

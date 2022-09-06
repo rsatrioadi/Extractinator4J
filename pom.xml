@@ -6,17 +6,17 @@
 
     <groupId>nl.tue.win</groupId>
     <artifactId>Extractinator4J</artifactId>
-    <version>0.3.1</version>
+    <version>0.3.2</version>
     <dependencies>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>1.7.36</version>
+            <version>2.0.0</version>
         </dependency>
         <dependency>
             <groupId>com.github.javaparser</groupId>
             <artifactId>javaparser-symbol-solver-core</artifactId>
-            <version>3.24.2</version>
+            <version>3.24.4</version>
         </dependency>
         <dependency>
             <groupId>org.apache.jena</groupId>
@@ -27,7 +27,7 @@
         <dependency>
             <groupId>com.github.owlcs</groupId>
             <artifactId>ontapi</artifactId>
-            <version>3.0.0</version>
+            <version>3.0.1</version>
         </dependency>
     </dependencies>
 
@@ -46,7 +46,7 @@
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>nl.tue.win.javajj.Main</mainClass>
+                                    <mainClass>nl.tue.win.extractinator.stereotype.StereotypeExtractinator</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

@@ -42,4 +42,14 @@ public class Edges extends HashSet<Edge> {
                                 .collect(Collectors.joining(","))))
                 .collect(Collectors.joining("\n")));
     }
+
+    public String toRSF() {
+        Comparator<Edge> bySource = Comparator.comparing(e -> e.getSource().getId());
+        Comparator<Edge> byTarget = Comparator.comparing(e -> e.getTarget().getId());
+        Comparator<Edge> byLabel = Comparator.comparing(Edge::getInteraction);
+        return this.stream()
+                .sorted(bySource.thenComparing(byTarget).thenComparing(byLabel))
+                .map(e -> String.format("%s %s %s", e.getInteraction(), e.getSource().getId(), e.getTarget().getId()))
+                .collect(Collectors.joining("\n"));
+    }
 }

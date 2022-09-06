@@ -5,7 +5,10 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.EnumDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.expr.BinaryExpr;
 import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.printer.configuration.DefaultConfigurationOption;
@@ -14,6 +17,7 @@ import com.github.javaparser.resolution.Resolvable;
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
 import com.github.javaparser.resolution.types.ResolvedType;
+import nl.tue.win.collections.StringList;
 import nl.tue.win.extractinator.graph.Resolver;
 
 import java.util.*;
@@ -58,6 +62,7 @@ public class ClassFactsCollector extends VoidVisitorAdapter<Map<String, ClassFac
             "whom", "why", "why's", "with", "won't", "would", "wouldn't", "you", "you'd", "you'll", "you're", "you've",
             "your", "yours", "yourself", "yourselves");
     private final DefaultPrinterConfiguration config;
+    private String currentClass;
 
     {
         config = new DefaultPrinterConfiguration();
@@ -70,13 +75,18 @@ public class ClassFactsCollector extends VoidVisitorAdapter<Map<String, ClassFac
 
         new Resolver<>((Resolvable<ResolvedReferenceTypeDeclaration>) decl).getResolution().ifPresent(cls -> {
 
-            String currentClass = cls.getQualifiedName();
-            if (!facts.containsKey(currentClass)) facts.put(currentClass, new ClassFacts());
+            currentClass = cls.getQualifiedName();
+            if (!facts.containsKey(currentClass)) {
+                facts.put(currentClass, new ClassFacts());
+            }
             ClassFacts f = facts.get(currentClass);
 
             WordsExtractor we = new WordsExtractor(decl.toString(config));
+            StringList words = new StringList(we.getOutput(stopWords));
             f.put(ClassFacts.Type.words,
-                    String.join(" ", we.getOutput(stopWords)));
+                    words);
+            f.put(ClassFacts.Type.numUniqueWords,
+                    (long) new HashSet<>(words).size());
 
             f.put(ClassFacts.Type.numExpressions,
                     decl.stream()
@@ -129,6 +139,22 @@ public class ClassFactsCollector extends VoidVisitorAdapter<Map<String, ClassFac
                             .filter(ResolvedReferenceType::isReferenceType)
                             .map(ResolvedReferenceType::getQualifiedName)
                             .anyMatch(n -> n.equals("java.util.Map")));
+
+            f.put(ClassFacts.Type.specializesListener,
+                    cls.getAllAncestors(resolvedTraverser).stream()
+                            .filter(ResolvedReferenceType::isReferenceType)
+                            .map(ResolvedReferenceType::getQualifiedName)
+                            .anyMatch(n -> n.endsWith("Listener") || n.endsWith("Observer")));
+            f.put(ClassFacts.Type.specializesAdapter,
+                    cls.getAllAncestors(resolvedTraverser).stream()
+                            .filter(ResolvedReferenceType::isReferenceType)
+                            .map(ResolvedReferenceType::getQualifiedName)
+                            .anyMatch(n -> n.endsWith("Adapter")));
+
+            f.put(ClassFacts.Type.isNamedManager,
+                    cls.getClassName().endsWith("Manager"));
+            f.put(ClassFacts.Type.isNamedController,
+                    cls.getClassName().endsWith("Controller"));
 
             List<VariableDeclarator> fieldDeclarations = decl.getFields().stream()
                     .flatMap(fd -> fd.getVariables().stream())
@@ -193,6 +219,9 @@ public class ClassFactsCollector extends VoidVisitorAdapter<Map<String, ClassFac
                             .filter(m -> m.hasModifier(Modifier.Keyword.STATIC))
                             .count());
 
+            f.put(ClassFacts.Type.numAncestors,
+                    (long) cls.getAllAncestors(resolvedTraverser).size());
+
             f.put(ClassFacts.Type.numGetters,
                     decl.getMethods().stream()
                             .filter(m -> m.getNameAsString().matches("^(get|is)[A-Z].*"))
@@ -218,18 +247,99 @@ public class ClassFactsCollector extends VoidVisitorAdapter<Map<String, ClassFac
                             .mapToLong(m -> m.getVariables().size())
                             .sum());
 
+            // numMathOperation, numBoolOperation, numComparison
+            f.put(ClassFacts.Type.numMathOperation, (long) 0);
+            f.put(ClassFacts.Type.numBoolOperation, (long) 0);
+            f.put(ClassFacts.Type.numComparison, (long) 0);
+
+            f.put(ClassFacts.Type.invokesIO, false);
+            f.put(ClassFacts.Type.numOutboundCalls, (long) 0);
+            f.put(ClassFacts.Type.numCtorCalls, (long) 0);
         });
     }
 
     @Override
     public void visit(ClassOrInterfaceDeclaration decl, Map<String, ClassFacts> facts) {
+        String prevClass = currentClass;
+        currentClass = null;
         visitStructure(decl, facts);
         super.visit(decl, facts);
+        currentClass = prevClass;
     }
 
     @Override
     public void visit(EnumDeclaration decl, Map<String, ClassFacts> facts) {
+        String prevClass = currentClass;
+        currentClass = null;
         visitStructure(decl, facts);
         super.visit(decl, facts);
+        currentClass = prevClass;
+    }
+
+    @Override
+    public void visit(MethodCallExpr expr, Map<String, ClassFacts> facts) {
+        new Resolver<>(expr).getResolution()
+                .ifPresent(methodCall -> {
+                    try {
+                        ClassFacts f = facts.get(currentClass);
+                        String ownerName = methodCall.declaringType().asReferenceType().getQualifiedName();
+
+                        if (ownerName.startsWith("java.io")) {
+                            f.put(ClassFacts.Type.invokesIO, true);
+                        }
+
+                        if (!ownerName.equals(currentClass)) {
+                            f.put(ClassFacts.Type.numOutboundCalls, ((long) f.getOrDefault(ClassFacts.Type.numOutboundCalls, (long) 0)) + 1);
+                        }
+
+                        if (expr.getName().asString().equals("equals")) {
+                            f.put(ClassFacts.Type.numComparison, ((long) f.getOrDefault(ClassFacts.Type.numComparison, (long) 0)) + 1);
+                        }
+                    } catch (Exception e) {
+                        System.err.println("unable to resolve method call " + expr.getNameAsString());
+                    }
+                });
+        super.visit(expr, facts);
+    }
+
+    @Override
+    public void visit(ObjectCreationExpr expr, Map<String, ClassFacts> facts) {
+        new Resolver<>(expr).getResolution()
+                .ifPresent(methodCall -> {
+                    try {
+                        ClassFacts f = facts.get(currentClass);
+                        String ownerName = methodCall.declaringType().asReferenceType().getQualifiedName();
+
+                        if (ownerName.startsWith("java.io")) {
+                            f.put(ClassFacts.Type.invokesIO, true);
+                        }
+
+                        if (!ownerName.equals(currentClass)) {
+                            f.put(ClassFacts.Type.numCtorCalls, ((long) f.getOrDefault(ClassFacts.Type.numCtorCalls, (long) 0)) + 1);
+                        }
+                    } catch (Exception e) {
+                        System.err.println("unable to resolve ctor call " + expr.getTypeAsString());
+                    }
+                });
+        super.visit(expr, facts);
+    }
+
+    private static final List<BinaryExpr.Operator> mathOperations = List.of(BinaryExpr.Operator.PLUS, BinaryExpr.Operator.MINUS, BinaryExpr.Operator.MULTIPLY, BinaryExpr.Operator.DIVIDE, BinaryExpr.Operator.REMAINDER);
+    private static final List<BinaryExpr.Operator> boolOperations = List.of(BinaryExpr.Operator.AND, BinaryExpr.Operator.OR, BinaryExpr.Operator.XOR);
+    private static final List<BinaryExpr.Operator> comparisons = List.of(BinaryExpr.Operator.EQUALS, BinaryExpr.Operator.NOT_EQUALS, BinaryExpr.Operator.GREATER, BinaryExpr.Operator.GREATER_EQUALS, BinaryExpr.Operator.LESS, BinaryExpr.Operator.LESS_EQUALS);
+
+    @Override
+    public void visit(BinaryExpr expr, Map<String, ClassFacts> facts) {
+        ClassFacts f = facts.get(currentClass);
+        if (mathOperations.contains(expr.getOperator())) {
+            f.put(ClassFacts.Type.numMathOperation, ((long) f.getOrDefault(ClassFacts.Type.numMathOperation, (long) 0)) + 1);
+        }
+        if (boolOperations.contains(expr.getOperator())) {
+            f.put(ClassFacts.Type.numBoolOperation, ((long) f.getOrDefault(ClassFacts.Type.numBoolOperation, (long) 0)) + 1);
+        }
+        if (comparisons.contains(expr.getOperator())) {
+            f.put(ClassFacts.Type.numComparison, ((long) f.getOrDefault(ClassFacts.Type.numComparison, (long) 0)) + 1);
+        }
+        super.visit(expr, facts);
     }
 }

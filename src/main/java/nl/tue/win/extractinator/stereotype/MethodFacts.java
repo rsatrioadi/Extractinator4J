@@ -5,7 +5,7 @@ import java.util.HashMap;
 public class MethodFacts extends HashMap<MethodFacts.Type, Object> {
 
     enum Type {
-        words, numConditionals, numLoops, numStatements, numExpressions,
+        words, numConditionals, numLoops, numStatements, numExpressions, numUniqueWords,
         isAbstract, isFinal, isStatic,
         isGetter, isSetter,
         numVars, numBooleanVars, numPrimitiveVars, numStringVars, numCollectionVars, numMapVars, numArrayVars,
