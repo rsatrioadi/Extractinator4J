@@ -5,19 +5,19 @@ import java.util.HashMap;
 public class ClassFacts extends HashMap<ClassFacts.Type, Object> {
 
     enum Type {
-        words, numConditionals, numLoops, numStatements, numExpressions, numUniqueWords,
+        words, numConditionals, numLoops, numStatements, numExpressions, numUniqueWords, numAssignemnts,
         isInterface, isClass, isEnum, isAbstract, isFinal, isAnonymous, isStatic,
         numFields, numBooleanFields, numPrimitiveFields, numStringFields, numCollectionFields, numMapFields, numArrayFields,
         numHiddenFields, numVisibleFields, numStaticFields,
-        numGetters, numSetters,
-        numHiddenMethods, numVisibleMethods, numStaticMethods,
+        numNamedGetters, numNamedSetters,
+        numMethods, numHiddenMethods, numVisibleMethods, numStaticMethods,
         numAncestors,
         isCollection, isMap,
         specializesListener, specializesAdapter,
         isNamedManager, isNamedController,
         invokesIO,
         numOutboundCalls, numCtorCalls,
-        numMathOperation, numBoolOperation, numComparison,
+        numMathOperations, numBoolOperations, numComparisons,
 
         maxNumUniqueWords,
         maxNumConditionals, maxNumLoops, maxNumStatements, maxNumExpressions,

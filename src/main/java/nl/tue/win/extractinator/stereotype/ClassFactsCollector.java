@@ -5,10 +5,7 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.EnumDeclaration;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
-import com.github.javaparser.ast.expr.BinaryExpr;
-import com.github.javaparser.ast.expr.Expression;
-import com.github.javaparser.ast.expr.MethodCallExpr;
-import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.printer.configuration.DefaultConfigurationOption;
@@ -26,6 +23,9 @@ import java.util.stream.Collectors;
 
 public class ClassFactsCollector extends VoidVisitorAdapter<Map<String, ClassFacts>> {
 
+    private static final List<BinaryExpr.Operator> mathOperations = List.of(BinaryExpr.Operator.PLUS, BinaryExpr.Operator.MINUS, BinaryExpr.Operator.MULTIPLY, BinaryExpr.Operator.DIVIDE, BinaryExpr.Operator.REMAINDER);
+    private static final List<BinaryExpr.Operator> boolOperations = List.of(BinaryExpr.Operator.AND, BinaryExpr.Operator.OR, BinaryExpr.Operator.XOR);
+    private static final List<BinaryExpr.Operator> comparisons = List.of(BinaryExpr.Operator.EQUALS, BinaryExpr.Operator.NOT_EQUALS, BinaryExpr.Operator.GREATER, BinaryExpr.Operator.GREATER_EQUALS, BinaryExpr.Operator.LESS, BinaryExpr.Operator.LESS_EQUALS);
     public static Function<ResolvedReferenceTypeDeclaration, List<ResolvedReferenceType>> resolvedTraverser = (rrtd) -> {
         List<ResolvedReferenceType> ancestors = new ArrayList<>();
         // We want to avoid infinite recursion in case of Object having Object as ancestor
@@ -112,6 +112,11 @@ public class ClassFactsCollector extends VoidVisitorAdapter<Map<String, ClassFac
                                     || n instanceof SwitchStmt)
                             .distinct()
                             .count());
+            f.put(ClassFacts.Type.numAssignemnts,
+                    decl.stream()
+                            .filter(n -> n instanceof AssignExpr)
+                            .distinct()
+                            .count());
 
             f.put(ClassFacts.Type.isClass,
                     cls.isClass());
@@ -157,13 +162,11 @@ public class ClassFactsCollector extends VoidVisitorAdapter<Map<String, ClassFac
                     cls.getClassName().endsWith("Controller"));
 
             List<VariableDeclarator> fieldDeclarations = decl.getFields().stream()
-                    .flatMap(fd -> fd.getVariables().stream())
-                    .collect(Collectors.toUnmodifiableList());
+                    .flatMap(fd -> fd.getVariables().stream()).toList();
             List<ResolvedType> fields = fieldDeclarations.stream()
                     .map(fd -> new Resolver<>(fd.getType()).getResolution())
                     .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .collect(Collectors.toUnmodifiableList());
+                    .map(Optional::get).toList();
 
             f.put(ClassFacts.Type.numFields,
                     fieldDeclarations.size());
@@ -206,6 +209,8 @@ public class ClassFactsCollector extends VoidVisitorAdapter<Map<String, ClassFac
                             .filter(ResolvedType::isArray)
                             .count());
 
+            f.put(ClassFacts.Type.numMethods,
+                    (long) decl.getMethods().size());
             f.put(ClassFacts.Type.numHiddenMethods,
                     decl.getMethods().stream()
                             .filter(m -> m.hasModifier(Modifier.Keyword.PRIVATE) || m.hasModifier(Modifier.Keyword.PROTECTED))
@@ -222,11 +227,11 @@ public class ClassFactsCollector extends VoidVisitorAdapter<Map<String, ClassFac
             f.put(ClassFacts.Type.numAncestors,
                     (long) cls.getAllAncestors(resolvedTraverser).size());
 
-            f.put(ClassFacts.Type.numGetters,
+            f.put(ClassFacts.Type.numNamedGetters,
                     decl.getMethods().stream()
                             .filter(m -> m.getNameAsString().matches("^(get|is)[A-Z].*"))
                             .count());
-            f.put(ClassFacts.Type.numSetters,
+            f.put(ClassFacts.Type.numNamedSetters,
                     decl.getMethods().stream().filter(m -> m.getNameAsString().matches("^set[A-Z].*"))
                             .count());
 
@@ -248,9 +253,9 @@ public class ClassFactsCollector extends VoidVisitorAdapter<Map<String, ClassFac
                             .sum());
 
             // numMathOperation, numBoolOperation, numComparison
-            f.put(ClassFacts.Type.numMathOperation, (long) 0);
-            f.put(ClassFacts.Type.numBoolOperation, (long) 0);
-            f.put(ClassFacts.Type.numComparison, (long) 0);
+            f.put(ClassFacts.Type.numMathOperations, (long) 0);
+            f.put(ClassFacts.Type.numBoolOperations, (long) 0);
+            f.put(ClassFacts.Type.numComparisons, (long) 0);
 
             f.put(ClassFacts.Type.invokesIO, false);
             f.put(ClassFacts.Type.numOutboundCalls, (long) 0);
@@ -293,7 +298,7 @@ public class ClassFactsCollector extends VoidVisitorAdapter<Map<String, ClassFac
                         }
 
                         if (expr.getName().asString().equals("equals")) {
-                            f.put(ClassFacts.Type.numComparison, ((long) f.getOrDefault(ClassFacts.Type.numComparison, (long) 0)) + 1);
+                            f.put(ClassFacts.Type.numComparisons, ((long) f.getOrDefault(ClassFacts.Type.numComparisons, (long) 0)) + 1);
                         }
                     } catch (Exception e) {
                         System.err.println("unable to resolve method call " + expr.getNameAsString());
@@ -324,21 +329,17 @@ public class ClassFactsCollector extends VoidVisitorAdapter<Map<String, ClassFac
         super.visit(expr, facts);
     }
 
-    private static final List<BinaryExpr.Operator> mathOperations = List.of(BinaryExpr.Operator.PLUS, BinaryExpr.Operator.MINUS, BinaryExpr.Operator.MULTIPLY, BinaryExpr.Operator.DIVIDE, BinaryExpr.Operator.REMAINDER);
-    private static final List<BinaryExpr.Operator> boolOperations = List.of(BinaryExpr.Operator.AND, BinaryExpr.Operator.OR, BinaryExpr.Operator.XOR);
-    private static final List<BinaryExpr.Operator> comparisons = List.of(BinaryExpr.Operator.EQUALS, BinaryExpr.Operator.NOT_EQUALS, BinaryExpr.Operator.GREATER, BinaryExpr.Operator.GREATER_EQUALS, BinaryExpr.Operator.LESS, BinaryExpr.Operator.LESS_EQUALS);
-
     @Override
     public void visit(BinaryExpr expr, Map<String, ClassFacts> facts) {
         ClassFacts f = facts.get(currentClass);
         if (mathOperations.contains(expr.getOperator())) {
-            f.put(ClassFacts.Type.numMathOperation, ((long) f.getOrDefault(ClassFacts.Type.numMathOperation, (long) 0)) + 1);
+            f.put(ClassFacts.Type.numMathOperations, ((long) f.getOrDefault(ClassFacts.Type.numMathOperations, (long) 0)) + 1);
         }
         if (boolOperations.contains(expr.getOperator())) {
-            f.put(ClassFacts.Type.numBoolOperation, ((long) f.getOrDefault(ClassFacts.Type.numBoolOperation, (long) 0)) + 1);
+            f.put(ClassFacts.Type.numBoolOperations, ((long) f.getOrDefault(ClassFacts.Type.numBoolOperations, (long) 0)) + 1);
         }
         if (comparisons.contains(expr.getOperator())) {
-            f.put(ClassFacts.Type.numComparison, ((long) f.getOrDefault(ClassFacts.Type.numComparison, (long) 0)) + 1);
+            f.put(ClassFacts.Type.numComparisons, ((long) f.getOrDefault(ClassFacts.Type.numComparisons, (long) 0)) + 1);
         }
         super.visit(expr, facts);
     }

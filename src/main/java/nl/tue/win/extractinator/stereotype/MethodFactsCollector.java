@@ -1,8 +1,9 @@
 package nl.tue.win.extractinator.stereotype;
 
-import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.NameExpr;
+import com.github.javaparser.ast.expr.ThisExpr;
 import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.type.Type;
@@ -18,7 +19,7 @@ import nl.tue.win.collections.StringList;
 import nl.tue.win.extractinator.graph.Resolver;
 
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MethodFactsCollector extends VoidVisitorAdapter<Map<String, MethodFacts>> {
 
@@ -62,15 +63,15 @@ public class MethodFactsCollector extends VoidVisitorAdapter<Map<String, MethodF
                         (long) new HashSet<>(words).size());
 
                 f.put(MethodFacts.Type.isAbstract,
-                        decl.hasModifier(Modifier.Keyword.ABSTRACT));
+                        decl.isAbstract());
                 f.put(MethodFacts.Type.isFinal,
-                        decl.hasModifier(Modifier.Keyword.FINAL));
+                        decl.isFinal());
                 f.put(MethodFacts.Type.isStatic,
-                        decl.hasModifier(Modifier.Keyword.STATIC));
+                        decl.isStatic());
 
-                f.put(MethodFacts.Type.isGetter,
+                f.put(MethodFacts.Type.isNamedGetter,
                         decl.getNameAsString().matches("^(get|is)[A-Z].*"));
-                f.put(MethodFacts.Type.isSetter,
+                f.put(MethodFacts.Type.isNamedSetter,
                         decl.getNameAsString().matches("^set[A-Z].*"));
 
 
@@ -102,8 +103,7 @@ public class MethodFactsCollector extends VoidVisitorAdapter<Map<String, MethodF
                 List<Type> varTypes = decl.stream()
                         .filter(fd -> fd instanceof VariableDeclarationExpr)
                         .map(fd -> (VariableDeclarationExpr) fd)
-                        .flatMap(fd -> fd.getVariables().stream().map(VariableDeclarator::getType))
-                        .collect(Collectors.toUnmodifiableList());
+                        .flatMap(fd -> fd.getVariables().stream().map(VariableDeclarator::getType)).toList();
 
                 f.put(MethodFacts.Type.numVars,
                         (long) varTypes.size());
@@ -155,8 +155,7 @@ public class MethodFactsCollector extends VoidVisitorAdapter<Map<String, MethodF
                                 .count());
 
                 List<Type> paramTypes = decl.getParameters().stream()
-                        .map(Parameter::getType)
-                        .collect(Collectors.toUnmodifiableList());
+                        .map(Parameter::getType).toList();
 
                 f.put(MethodFacts.Type.numParams,
                         (long) paramTypes.size());
@@ -206,6 +205,35 @@ public class MethodFactsCollector extends VoidVisitorAdapter<Map<String, MethodF
                         paramTypes.stream()
                                 .filter(Type::isArrayType)
                                 .count());
+
+
+                //isGetter, isPredicate, isProperty, isSetter, isCommand,
+                AtomicBoolean isGetter = new AtomicBoolean(false);
+                if (decl.isPublic()) {
+                    decl.findAll(ReturnStmt.class)
+                            .forEach(s -> s.getExpression().ifPresent(expr -> {
+                                try {
+                                    if (expr.isFieldAccessExpr()) {
+                                        isGetter.set(true);
+                                    }
+                                    else if (expr instanceof NameExpr ne) {
+                                        if (ne.resolve().isField()) {
+                                            isGetter.set(true);
+                                        }
+                                    }
+                                } catch (Exception e) {
+                                    System.err.println(e.getMessage());
+                                }
+                            }));
+                }
+
+                f.put(MethodFacts.Type.isGetter,
+                        isGetter.get());
+
+                //isFactory, numCtorCalls,
+                //numAssignmentsToField, numCallsToField, numFieldsInvolved, numInternalCalls, numExternalCalls,
+                //numCallsToParam, numCallsToVars,
+                //numMathOperations, numBoolOperations, numComparisons, numAssignments
 
             } catch (Throwable e) {
                 System.err.println("unable to resolve " + decl.getSignature());
