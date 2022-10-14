@@ -17,7 +17,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class ProjectLoader {
 
@@ -68,7 +67,7 @@ public class ProjectLoader {
                 .map(pair -> pair.b.getResult())
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .collect(Collectors.toUnmodifiableList());
+                .toList();
     }
 
     public Project getProject() {

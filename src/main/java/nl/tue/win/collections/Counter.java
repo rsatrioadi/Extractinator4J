@@ -1,5 +1,7 @@
 package nl.tue.win.collections;
 
+import spoon.reflect.reference.CtTypeReference;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -13,13 +15,21 @@ public class Counter<T> extends AbstractMap<T, Integer> {
         counts = new ConcurrentHashMap<>();
     }
 
-    public Counter(Collection<T> items) {
+    public Counter(Collection<? extends T> items) {
         this();
         items.forEach(this::put);
     }
 
     public Counter(T... items) {
         this();
+        Arrays.stream(items).forEach(this::put);
+    }
+
+    public void update(Collection<? extends T> items) {
+        items.forEach(this::put);
+    }
+
+    public void update(T ... items) {
         Arrays.stream(items).forEach(this::put);
     }
 
@@ -57,5 +67,12 @@ public class Counter<T> extends AbstractMap<T, Integer> {
         return counts.entrySet().stream()
                 .sorted((e1, e2) -> Integer.compare(e2.getValue(), e1.getValue()))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    @Override
+    public String toString() {
+        return entrySet().stream()
+                .map(e -> "- %s: %d".formatted(e.getKey(), e.getValue()))
+                .collect(Collectors.joining("\n"));
     }
 }

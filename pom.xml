@@ -6,7 +6,7 @@
 
     <groupId>nl.tue.win</groupId>
     <artifactId>Extractinator4J</artifactId>
-    <version>0.3.2</version>
+    <version>0.4</version>
     <dependencies>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -29,6 +29,11 @@
             <artifactId>ontapi</artifactId>
             <version>3.0.1</version>
         </dependency>
+        <dependency>
+            <groupId>fr.inria.gforge.spoon</groupId>
+            <artifactId>spoon-core</artifactId>
+            <version>10.1.1</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -36,6 +41,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
+                <version>3.3.0</version>
                 <executions>
                     <execution>
                         <goals>
@@ -56,6 +62,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.10.1</version>
                 <configuration>
                     <source>16</source>
                     <target>16</target>

@@ -3,7 +3,6 @@ package nl.tue.win.extractinator.stereotype;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.NameExpr;
-import com.github.javaparser.ast.expr.ThisExpr;
 import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.type.Type;
@@ -215,8 +214,7 @@ public class MethodFactsCollector extends VoidVisitorAdapter<Map<String, MethodF
                                 try {
                                     if (expr.isFieldAccessExpr()) {
                                         isGetter.set(true);
-                                    }
-                                    else if (expr instanceof NameExpr ne) {
+                                    } else if (expr instanceof NameExpr ne) {
                                         if (ne.resolve().isField()) {
                                             isGetter.set(true);
                                         }
